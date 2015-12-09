@@ -8,49 +8,56 @@
 class EntityViewCount extends Entity {
 
   /**
-   * @var Integer
+   * @var integer
    *
    * The identifier of the entity.
    */
   public $id;
 
   /**
-   * @var String
+   * @var string
+   *
+   * The type of the entity bundle.
+   */
+  public $type;
+
+  /**
+   * @var string
    *
    * The entity type the entry relate to.
    */
   public $entity_type;
 
   /**
-   * @var Integer
+   * @var integer
    *
    * The entity id the entry relate to.
    */
   public $entity_id;
 
   /**
-   * @var String
+   * @var string
    *
    * The entity owner UID.
    */
   public $entity_owner;
 
   /**
-   * @var String
+   * @var string
    *
    * The view mode when the entity was viewed.
    */
   public $view_mode;
 
   /**
-   * @var Integer
+   * @var integer
    *
    * The unix time stamp the entry created.
    */
   public $created;
 
   /**
-   * @var Integer
+   * @var integer
    *
    * The user ID that the view the entity which the entry relate to.
    */

@@ -20,6 +20,12 @@ function entity_view_count_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
+      'type' => array(
+        'description' => 'The bundle of the entity view count record.',
+        'type' => 'varchar',
+        'length' => 32,
+        'default' => 'entity_view_count_base',
+      ),
       'entity_type' => array(
         'description' => 'The entity type.',
         'type' => 'varchar',

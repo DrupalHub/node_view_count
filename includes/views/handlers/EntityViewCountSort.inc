@@ -8,6 +8,9 @@
 
 class EntityViewCountSort extends views_handler_sort {
 
+  /**
+   * {@inheritdoc}
+   */
   public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
@@ -47,6 +50,9 @@ class EntityViewCountSort extends views_handler_sort {
     $form['#attached']['js'][] = drupal_get_path('module', 'entity_view_count') . '/includes/entity_view_count.js';
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function option_definition() {
     $options = parent::option_definition();
 
@@ -81,4 +87,5 @@ class EntityViewCountSort extends views_handler_sort {
       );
     }
   }
+
 }

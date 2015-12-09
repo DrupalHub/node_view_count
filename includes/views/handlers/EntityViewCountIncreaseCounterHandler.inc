@@ -26,4 +26,5 @@ class EntityViewCountIncreaseCounterHandler extends views_handler_field_entity {
 
     return t("This field should be exclude from display.");
   }
+
 }

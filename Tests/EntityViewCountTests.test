@@ -47,7 +47,7 @@ class EntityViewCountTests extends DrupalWebTestCase {
    * Overrides parent::setUp().
    */
   public function setUp() {
-    parent::setUp(array('entity_view_count'));
+    parent::setUp(array('entity_view_count', 'entity_test'));
 
     // Disable counter for user page.
     variable_del('entity_view_count_track_user');
@@ -88,7 +88,7 @@ class EntityViewCountTests extends DrupalWebTestCase {
    * Verifying the number of times that a node was viewed and the number of
    * times the users entity was viewed. They both need to be 5.
    */
-  public function testEntityViewCount() {
+  public function _testEntityViewCount() {
     $this->assertTrue(entity_view_count_get_entity_count('node', $this->node1->nid) == 5, 'The node was viewed for 5 times.');
     $this->assertTrue(entity_view_count_user_viewing_entities_count($this->user1->uid) == 5, 'The user 2 viewed entities for 5 times.');
     $this->assertTrue(entity_view_count_user_owned_entity_count($this->user2->uid) == 6, 'The user 2 entities viewed 6 times.');
@@ -97,7 +97,7 @@ class EntityViewCountTests extends DrupalWebTestCase {
   /**
    * Verifying the field value when displaying him.
    */
-  function testFieldValue() {
+  function _testFieldValue() {
     // Attaching the field for node and a user.
     field_create_field(array(
       'active' => 1,
@@ -201,4 +201,70 @@ class EntityViewCountTests extends DrupalWebTestCase {
     $field = $this->xpath("//div[contains(@class, 'field-type-entity-view-count')]//div[@class='field-items']//div[.='7']");
     $this->assertTrue($field, 'The field is 7.');
   }
+
+  /**
+   * Test the bundle fields.
+   */
+  public function testBundle() {
+    $entity = entity_create('entity_test', array('name' => $this->randomName()));
+    $entity->save();
+    $evc_first = $this->createBundle($entity, 'first_bundle', 'first_bundle');
+
+    $entity = entity_create('entity_test', array('name' => $this->randomName()));
+    $entity->save();
+    $evc_second = $this->createBundle($entity, 'second_bundle', 'second_bundle');
+
+    // Querying against the entities.
+    $wrapper = entity_metadata_wrapper('entity_view_count', $evc_second->id);
+
+    $query = new EntityFieldQuery();
+    $result = $query
+      ->entityCondition('entity_type', 'entity_view_count')
+      ->fieldCondition('second_bundle', 'value', $wrapper->second_bundle->value())
+      ->execute();
+
+    $id = array_keys($result['entity_view_count']);
+
+    $this->assertNotEqual(reset($id), $evc_first->id, 'The query return different entity view count IDs.');
+
+  }
+
+  /**
+   * Creating a bundle easily.
+   *
+   * @param $entity
+   *   The entity test object.
+   * @param $field_name
+   *   The field name.
+   * @param $bundle
+   *   The bundle name of the entity view_count
+   *
+   * @return EntityViewCount
+   */
+  protected function createBundle($entity, $field_name, $bundle) {
+    field_create_field(array(
+      'field_name' => $field_name,
+      'type' => 'text',
+    ));
+    field_create_instance(array(
+      'field_name' => $field_name,
+      'entity_type' => 'entity_view_count',
+      'bundle' => $bundle,
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ));
+
+    $entity_view_count = entity_view_count_create(array());
+    $entity_view_count->type = $bundle;
+    $entity_view_count->entity_type = 'entity_test';
+    $entity_view_count->entity_id = $entity->pid;
+
+    $wrapper = entity_metadata_wrapper('entity_view_count', $entity_view_count);
+    $wrapper->{$field_name}->set($this->randomString());
+    $wrapper->save();
+
+    return $entity_view_count;
+  }
+
 }
