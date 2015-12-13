@@ -76,7 +76,7 @@ function entity_view_count_entity_info() {
     ),
     'fieldable' => TRUE,
     'metadata controller class' => 'EntityDefaultMetadataController',
-    'views controller class' => 'EntityDefaultViewsController',
+    'views controller class' => 'EntityViewCountViewController',
   );
 
   return $info;
