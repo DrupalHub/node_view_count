@@ -1,0 +1,11 @@
+name = Entity view count cache
+core = 7.x
+description = Entity view count cache
+package = Entity
+configure = admin/config/system/entity_view_count/cache
+
+files[] = entity_view_count_cache.admin.inc
+files[] = views/entity_view_count_cache.views.inc
+files[] = views/entity_view_count_cache_sort_handler_view_count.inc
+
+dependencies[] = entity_view_count

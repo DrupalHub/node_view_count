@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function entity_view_count_cache_schema() {
+  $schema = array();
+
+  $schema['entity_view_count_cache'] = array(
+    'description' => 'Base table for the entity view count module.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The identifier for the schema.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'The bundle of the entity view count record.',
+        'type' => 'varchar',
+        'length' => 32,
+        'default' => 'entity_view_count_base',
+      ),
+      'entity_type' => array(
+        'description' => 'The entity type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The entity identifier.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'entity_owner' => array(
+        'description' => 'The entity owner ID.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'updated' => array(
+        'description' => 'The Unix timestamp when the cache was updated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'count' => array(
+        'description' => 'The cached count of views',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'foreign keys' => array(
+      'viewer' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'entity' => array('entity_type', 'entity_id'),
+      'entity_owner' => array('entity_type', 'entity_id', 'entity_owner'),
+    ),
+  );
+
+  return $schema;
+}
+

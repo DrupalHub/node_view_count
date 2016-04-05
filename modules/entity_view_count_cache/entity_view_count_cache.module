@@ -1,0 +1,198 @@
+<?php
+
+require_once 'entity_view_count_cache.field.inc';
+
+define('ENTITY_VIEW_COUNT_CACHE_DEFAULT_TYPE', 'entity_view_count_base');
+
+/**
+ * Implements: hook_views_api()
+ */
+function entity_view_count_cache_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'entity_view_count_cache') . '/views',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function entity_view_count_cache_menu() {
+  $items = array();
+
+  $items['admin/config/system/entity_view_count/cache'] = array(
+    'title' => 'Cache',
+    'description' => 'Description',
+    'access arguments' => array('administer entity view count entries'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('entity_view_count_cache_reindex_form'),
+    'file' => 'entity_view_count_cache.admin.inc',
+    'file path' => drupal_get_path('module', 'entity_view_count_cache'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Get the number of times the entity was viewed.
+ *
+ * @param String $entity_type
+ *   The entity type.
+ * @param Integer $entity_id
+ *   The entity ID.
+ *
+ * @return integer
+ *   The number of times the entity was viewed.
+ */
+function entity_view_count_cache_get_entity_count($entity_type, $entity_id) {
+  $query = db_query("SELECT `count` FROM {entity_view_count_cache} WHERE entity_type = :entity_type AND entity_id = :entity_id", array(
+    ':entity_type' => $entity_type,
+    ':entity_id' => $entity_id
+  ));
+
+  $count = $query->fetchField();
+
+  return (!empty($count)) ? $count : 0;
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function entity_view_count_cache_entity_insert($entity, $type) {
+  if ($type == 'entity_view_count' && $entity->type == 'entity_view_count_base') {
+
+    $cache_item = entity_view_count_cache_get($entity->entity_type, $entity->entity_id, $entity->entity_owner);
+    $count = entity_view_count_get_entity_count($entity->entity_type, $entity->entity_id);
+
+    drupal_alter('entity_view_count_cache', $count, $entity->entity_type, $entity->entity_id);
+
+    if (!empty($cache_item)) {
+      //update
+      entity_view_count_cache_update($cache_item['id'], $count);
+    }
+    else {
+      entity_view_count_cache_insert($entity->entity_type, $entity->entity_id, $entity->entity_owner, $count);
+    }
+
+  }
+}
+
+/**
+ * Update cache item
+ * @param $id
+ * @param $count
+ * @param string $type
+ */
+function entity_view_count_cache_update($id, $count, $type = ENTITY_VIEW_COUNT_CACHE_DEFAULT_TYPE) {
+  $query = db_update('entity_view_count_cache');
+  $query->fields(array('updated' => time(), 'count' => $count));
+  $query->condition('id', $id);
+
+  $query->execute();
+}
+
+/**
+ * Insert new cache item
+ * @param $enity_type
+ * @param $entity_id
+ * @param $entity_owner
+ * @param null $count
+ * @param string $type
+ * @throws \Exception
+ */
+function entity_view_count_cache_insert($enity_type, $entity_id, $entity_owner, $count = NULL, $type = ENTITY_VIEW_COUNT_CACHE_DEFAULT_TYPE) {
+  if (empty($count)) {
+    //get the count from the main table
+    $count = 0;
+  }
+
+  $query = db_insert('entity_view_count_cache');
+  $query->fields(array('type', 'entity_type', 'entity_id', 'entity_owner', 'count'));
+  $query->values(array(
+    'type' => $type,
+    'entity_type' => $enity_type,
+    'entity_id' => $entity_id,
+    'entity_owner' => $entity_owner,
+    'count' => $count,
+  ));
+
+  $query->execute();
+}
+
+/**
+ * Get cached item from entity_view_count_cache
+ * @param $entity_type
+ * @param $entity_id
+ * @param $entity_owner
+ * @param string $type
+ * @return mixed
+ */
+function entity_view_count_cache_get($entity_type, $entity_id, $entity_owner, $type = ENTITY_VIEW_COUNT_CACHE_DEFAULT_TYPE) {
+  $query = db_select('entity_view_count_cache', 'evcc');
+  $query->addField('evcc', 'id');
+  $query->condition('evcc.type', $type);
+  $query->condition('evcc.entity_type', $entity_type);
+  $query->condition('evcc.entity_id', $entity_id);
+  $query->condition('evcc.entity_owner', $entity_owner);
+  $query->range(0, 1);
+
+  return $query->execute()->fetchAssoc();
+}
+
+/**
+ * Update batch to insert all already existing view items
+ */
+function entity_view_count_cache_update_batch() {
+  $batch = array(
+    'operations' => array(),
+    'finished' => 'entity_view_count_cache_update_batch_finish',
+    'title' => t('Entity view count cache indexing'),
+    'init_message' => t('Starting caching entity view count...'),
+    'progress_message' => t('Processed @current out of @total.'),
+    'error_message' => t('Has encountered an error.')
+  );
+
+  $query = db_select('entity_view_count', 'evc');
+  $query->fields('evc', array('entity_id', 'entity_type', 'entity_owner'));
+  $query->distinct();
+  $query->execute();
+
+  $result = $query->execute();
+
+  while ($record = $result->fetchAssoc()) {
+    $batch['operations'][] = array(
+      'entity_view_count_cache_update_batch_worker',
+      array($record)
+    );
+  }
+
+  batch_set($batch);
+  batch_process();
+}
+
+/**
+ * Finish callback for batch
+ * @param $result
+ * @param $sandbox
+ */
+function entity_view_count_cache_update_batch_finish($result, $sandbox) {
+  drupal_set_message(t('Succeed indexing entity view cache items'));
+}
+
+/**
+ * Worker for the batch updater
+ * @param $data
+ * @param $sandbox
+ */
+function entity_view_count_cache_update_batch_worker($data, &$sandbox) {
+  $sandbox['message'] = t('Now processing @entity_type @entity_id', array(
+    '@entity_type' => $data['entity_type'],
+    '@entity_id' => $data['entity_id']
+  ));
+
+  $fake_entity = (object) $data;
+  $fake_entity->type = 'entity_view_count_base';
+  entity_view_count_cache_entity_insert($fake_entity, 'entity_view_count');
+}
+
