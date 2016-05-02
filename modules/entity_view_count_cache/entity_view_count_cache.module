@@ -68,7 +68,7 @@ function entity_view_count_cache_entity_insert($entity, $type) {
     drupal_alter('entity_view_count_cache', $count, $entity->entity_type, $entity->entity_id);
 
     if (!empty($cache_item)) {
-      //update
+      // Update
       entity_view_count_cache_update($cache_item['id'], $count);
     }
     else {
