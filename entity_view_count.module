@@ -37,6 +37,10 @@ function entity_view_count_permission() {
       'title' => t('View entity view count field'),
       'description' => t('Allow to the user watch the entity view count values.'),
     ),
+    'increase entity view count' => array(
+      'title' => t('Increase entity view count'),
+      'description' => t('Allow to the user to increase the entity view count values.'),
+    ),
   );
 }
 
@@ -153,6 +157,10 @@ function entity_view_count_entity_view($entity, $type, $view_mode, $langcode) {
   $info = variable_get('entity_view_count_track_' . $type);
 
   if (empty($info[$view_mode])) {
+    return;
+  }
+
+  if (!user_access('increase entity view count')) {
     return;
   }
 
