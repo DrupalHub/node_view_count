@@ -22,7 +22,7 @@ function entity_view_count_views_data() {
         'base' => 'entity_view_count',
         'base field' => 'entity_id',
         'field' => $info['entity keys']['id'],
-        'join_extra' => array(
+        'extra' => array(
           array(
             'field' => 'entity_type',
             'value' => $entity_type,
