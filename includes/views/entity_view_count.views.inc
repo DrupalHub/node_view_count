@@ -7,24 +7,31 @@ function entity_view_count_views_data() {
 
   $data = array();
 
-  foreach (entity_get_info() as $key => $info) {
+  foreach (entity_get_info() as $entity_type => $info) {
 
     if (!$info['fieldable']) {
       continue;
     }
 
-    $data[$info['base table']][$key . '_entity_view_count'] = array(
+    $data[$info['base table']][$entity_type . '_entity_view_count'] = array(
       'title'  => t('@label\'s view count', array('@label' => $info['label'])),
       'help' => t('Create relationship for sorting the entities by their views amount.'),
 
       'relationship' => array(
         'handler' => 'views_handler_relationship',
         'base' => 'entity_view_count',
+        'base field' => 'entity_id',
         'field' => $info['entity keys']['id'],
+        'extra' => array(
+          array(
+            'field' => 'entity_type',
+            'value' => $entity_type,
+          ),
+        ),
       ),
     );
 
-    $data[$info['base table']][$key . '_entity_view_count_increase'] = array(
+    $data[$info['base table']][$entity_type . '_entity_view_count_increase'] = array(
       'title'  => t('Increase count for @label', array('@label' => $info['label'])),
       'help' => t('When using field mode instead of rendered entity this field will create an entity view count entry.'),
 
